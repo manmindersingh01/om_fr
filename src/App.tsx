@@ -1,8 +1,6 @@
-import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Landing from "./components/Landing";
 import Room from "./components/Room";
-import Home from "./components/Home";
 
 const App = () => {
   return (
@@ -13,7 +11,12 @@ const App = () => {
           <Route
             path="/room"
             element={
-              <Room name="" localAudioTrack={null} localVideoTrack={null} />
+              <Room
+                name=""
+                localAudioTrack={null}
+                localVideoTrack={null}
+                stream={null}
+              />
             }
           />
         </Routes>

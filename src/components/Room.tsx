@@ -1,12 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import io from "socket.io-client";
-import { Video, VideoOff, Mic, MicOff, SkipForward, Send } from "lucide-react";
+import { SkipForward, Send } from "lucide-react";
 import { Socket } from "socket.io-client";
+
 const Room = ({
   name,
-  localAudioTrack,
-  localVideoTrack,
   stream,
 }: {
   name: string;
@@ -16,12 +15,9 @@ const Room = ({
 }) => {
   const [searchParams] = useSearchParams();
   const [socket, setSocket] = useState<typeof Socket | null>(null);
-  const [lobby, setLobby] = useState(true);
   const [pc, setPc] = useState<RTCPeerConnection | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOn, setIsVideoOn] = useState(true);
   const [message, setMessage] = useState("");
   const [roomId, setRoomId] = useState("");
   const [messages, setMessages] = useState<{ text: string; isSelf: boolean }[]>(
@@ -105,7 +101,6 @@ const Room = ({
     newSocket.on("send-offer", async (m: { roomId: string }) => {
       console.log("Received send-offer for room:", m.roomId);
       setRoomId(m.roomId);
-      setLobby(false);
 
       // Create peer connection
       peerConnection = new RTCPeerConnection({
@@ -202,7 +197,6 @@ const Room = ({
       }) => {
         console.log("Received offer for room:", roomId);
         setRoomId(roomId);
-        setLobby(false);
 
         // Create peer connection
         peerConnection = new RTCPeerConnection({
@@ -350,11 +344,6 @@ const Room = ({
       }
     });
 
-    // Handle lobby state
-    newSocket.on("lobby", () => {
-      setLobby(true);
-    });
-
     setSocket(newSocket);
 
     // Cleanup on component unmount
@@ -406,7 +395,6 @@ const Room = ({
     socket?.on("skipOther", () => {
       console.log("Received skipOther");
       setRoomId("");
-      setLobby(true);
       setMessages([]);
       if (pc) {
         pc.close();
@@ -419,7 +407,6 @@ const Room = ({
       socket.emit("skip", { roomId, socketId: socket.id });
     }
     setRoomId("");
-    setLobby(true);
     setMessages([]);
     if (pc) {
       pc.close();
@@ -461,36 +448,6 @@ const Room = ({
 
           {/* Video Controls */}
           <div className="flex justify-center gap-4 p-4 bg-white rounded-lg shadow-md">
-            {/* <button
-              onClick={() => setIsVideoOn(!isVideoOn)}
-              className={`p-3 rounded-full ${
-                isVideoOn
-                  ? "bg-blue-500 hover:bg-blue-600"
-                  : "bg-red-500 hover:bg-red-600"
-              } transition-colors`}
-            >
-              {isVideoOn ? (
-                <Video className="w-5 h-5 text-white" />
-              ) : (
-                <VideoOff className="w-5 h-5 text-white" />
-              )}
-            </button> */}
-
-            {/* <button
-              onClick={() => setIsMuted(!isMuted)}
-              className={`p-3 rounded-full ${
-                !isMuted
-                  ? "bg-blue-500 hover:bg-blue-600"
-                  : "bg-red-500 hover:bg-red-600"
-              } transition-colors`}
-            >
-              {!isMuted ? (
-                <Mic className="w-5 h-5 text-white" />
-              ) : (
-                <MicOff className="w-5 h-5 text-white" />
-              )}
-            </button> */}
-
             <button
               onClick={handleSkipForward}
               className="p-3 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors"
