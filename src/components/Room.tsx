@@ -26,6 +26,7 @@ const Room = ({
       { text: "Hello!", isSelf: false },
     ]
   );
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const handleSendMessage = () => {
     if (message.trim()) {
@@ -54,19 +55,34 @@ const Room = ({
     }
   }, [stream]);
 
-  //handling the messages
-
   // Main connection setup
   useEffect(() => {
-    const newSocket = io(
-      "ws://ec2-13-60-251-80.eu-north-1.compute.amazonaws.com:3000",
-      {
-        transports: ["websocket", "polling"],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      }
-    );
+    const serverUrl =
+      import.meta.env.VITE_WS_SERVER_URL ||
+      "ws://ec2-13-60-251-80.eu-north-1.compute.amazonaws.com:3000";
+
+    const newSocket = io(serverUrl, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      secure: true,
+      rejectUnauthorized: false,
+    });
+
+    newSocket.on("connect_error", (error: Error) => {
+      console.error("Socket connection error:", error);
+      setConnectionError(
+        "Failed to connect to the server. Please try again later."
+      );
+    });
+
+    newSocket.on("connect", () => {
+      console.log("Connected to server with ID:", newSocket.id);
+      setConnectionError(null);
+      newSocket.emit("join-lobby", { name: userName });
+    });
+
     setSocket(newSocket);
     let peerConnection: RTCPeerConnection | null = null;
 
@@ -90,12 +106,6 @@ const Room = ({
         setPendingCandidates([]);
       }
     };
-
-    // Connection established with server
-    newSocket.on("connect", () => {
-      console.log("Connected to server with ID:", newSocket.id);
-      newSocket.emit("join-lobby", { name: userName });
-    });
 
     // Initialize sender peer connection
     newSocket.on("send-offer", async (m: { roomId: string }) => {
@@ -415,6 +425,11 @@ const Room = ({
   };
   return (
     <div className="min-h-screen bg-blue-200 flex flex-col">
+      {connectionError && (
+        <div className="fixed top-0 left-0 right-0 bg-red-500 text-white p-4 text-center">
+          {connectionError}
+        </div>
+      )}
       {/* Main Content */}
       <div className="flex-1 flex p-4 gap-4">
         {/* Left Side - Videos */}
